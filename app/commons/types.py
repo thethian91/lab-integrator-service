@@ -1,5 +1,7 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional, Literal, Dict, Any
+from typing import Any, Dict, List, Literal, Optional
+
+from pydantic import BaseModel
+
 
 class Patient(BaseModel):
     tipo_doc: str
@@ -9,13 +11,14 @@ class Patient(BaseModel):
     born_date: str
     gender: str
 
+
 class OrderItem(BaseModel):
     order_id: str
     placer_id: Optional[str] = None
     codigo: str
     description: str
     date_orden: str
-    date_test: str #f echa muestra
+    date_test: str  # f echa muestra
 
 
 class OrderPayload(BaseModel):
@@ -24,10 +27,12 @@ class OrderPayload(BaseModel):
     meta: Dict[str, Any]
     ordenes: List[OrderItem]
 
+
 class TransportCfg(BaseModel):
-    type: Literal["file","tcp"]
+    type: Literal["file", "tcp"]
     file: Dict[str, Any] = {}
     tcp: Dict[str, Any] = {}
+
 
 class Settings(BaseModel):
     app: Dict[str, Any]

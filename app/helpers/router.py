@@ -1,8 +1,9 @@
 import re
-from app.commons.hl7_engine import HL7Engine
-from app.commons.logger import logger
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
+from app.commons.hl7_engine import HL7Engine
+
 
 def _replace_none(obj):
     if isinstance(obj, dict):
@@ -12,6 +13,7 @@ def _replace_none(obj):
     elif obj is None:
         return ""
     return obj
+
 
 class FlowRouter:
     def __init__(self, engine: HL7Engine, cfg):
@@ -59,7 +61,7 @@ class FlowRouter:
                 continue
 
             # WDn (WBC discriminators #0..n)
-            mwd = re.fullmatch(r'(wd)(\d+)', tag)
+            mwd = re.fullmatch(r"(wd)(\d+)", tag)
             if mwd:
                 idx = int(mwd.group(2))
                 val = f3 or f4
@@ -77,23 +79,40 @@ class FlowRouter:
                 continue
             if "flags" in (f5 or "").lower():
                 # severidad en f5 (p.ej. 6^WBC flags)
-                sev = re.match(r'(\d+)', f5 or "")
+                sev = re.match(r"(\d+)", f5 or "")
                 sys = "UNKNOWN"
-                if "WBC" in (f5 or "").upper(): sys = "WBC"
-                if "RBC" in (f5 or "").upper(): sys = "RBC"
-                if "PLT" in (f5 or "").upper(): sys = "PLT"
-                out["icon3"]["flags"].setdefault(sys, []).append({"code": f3 or f4, "severity": int(sev.group(1)) if sev else None})
+                if "WBC" in (f5 or "").upper():
+                    sys = "WBC"
+                if "RBC" in (f5 or "").upper():
+                    sys = "RBC"
+                if "PLT" in (f5 or "").upper():
+                    sys = "PLT"
+                out["icon3"]["flags"].setdefault(sys, []).append(
+                    {"code": f3 or f4, "severity": int(sev.group(1)) if sev else None}
+                )
                 continue
 
         return out
-    
+
     # --- NUEVO: normalizar OBX-5 (*, <, >, '-') ---
     def _normalize_obx_value(self, raw: str) -> dict:
         raw = (raw or "").strip()
         if raw == "":
-            return {"raw": "", "flagged": False, "dashed": False, "qualifier": None, "numeric": None}
+            return {
+                "raw": "",
+                "flagged": False,
+                "dashed": False,
+                "qualifier": None,
+                "numeric": None,
+            }
         if raw == "-":
-            return {"raw": "-", "flagged": False, "dashed": True, "qualifier": None, "numeric": None}
+            return {
+                "raw": "-",
+                "flagged": False,
+                "dashed": True,
+                "qualifier": None,
+                "numeric": None,
+            }
         flagged = raw.startswith("*")
         val = raw[1:] if flagged else raw
         qualifier = None
@@ -104,10 +123,16 @@ class FlowRouter:
             num = float(val)
         except ValueError:
             num = None
-        return {"raw": raw, "flagged": flagged, "dashed": False, "qualifier": qualifier, "numeric": num}
-    
+        return {
+            "raw": raw,
+            "flagged": flagged,
+            "dashed": False,
+            "qualifier": qualifier,
+            "numeric": num,
+        }
+
     def _postprocess_icon3(self, data: dict) -> dict:
-        """ Añade normalización de OBX-5 y anota NTE ICON3. """
+        """Añade normalización de OBX-5 y anota NTE ICON3."""
         # Normaliza exámenes
         for ord in data.get("ordenes", []):
             for ex in ord.get("examenes", []):
@@ -140,15 +165,4 @@ class FlowRouter:
         annotations = self._parse_icon3_nte(hl7_text)
         data.update(annotations)
 
-        return self._postprocess_icon3(_replace_none( data ))
-        '''
-        header_profile = self.cfg["engine"].get("header_profile")
-        grouped_profile = self.cfg["engine"]["extractor_profile"]
-
-        base = {}
-        if header_profile:
-            base = self.engine.extract(header_profile, hl7_text)
-
-        # Agrega OBR/OBX sobre el diccionario base (ya con paciente/meta)
-        return self.engine.extract_grouped(grouped_profile, hl7_text, base_out=base)
-        '''
+        return self._postprocess_icon3(_replace_none(data))
