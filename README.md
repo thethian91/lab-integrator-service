@@ -10,6 +10,12 @@ Integrador HL7 (ORM/ORU) con MLLP, File watcher, y mapeo YAML.
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-pre-commit install
 
+## Instalar dependencias
+### Producción
+pip install -r requirements.txt
+
+### Desarrollo
+pip install -r requirements-dev.txt
+
+pre-commit install

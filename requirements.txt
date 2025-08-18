@@ -1,0 +1,6 @@
+loguru==0.7.2
+PyYAML==6.0.2
+watchdog==4.0.2
+typer==0.12.3
+pydantic==2.11.1
+
