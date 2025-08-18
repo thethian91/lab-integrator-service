@@ -1,12 +1,19 @@
+# Python
 __pycache__/
-*.pyc
-*.log
+*.py[cod]
+*.egg-info/
+.venv/
 .env
+dist/
+build/
+
+# Logs y artefactos locales
 logs/
 app/storages/inbox/
 app/storages/outbox/
 app/storages/archive/
 app/storages/error/
-.DS_Store
-.python-version
 
+# IDE
+.vscode/
+.idea/
