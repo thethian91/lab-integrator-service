@@ -1,0 +1,62 @@
+app:
+  name: ""
+  mode: "prod" # dev|prod
+  timezone: "America/Bogota"
+
+engine: 
+  template: "ORM_O01_ORC_EACH"
+  extractor_profile: "OBR_OBX_GROUPED"
+  header_profile: "HEADER_PATIENT"  
+  format: "F"  # (opcional) para activar reglas de Format F en validaciones
+
+filename:
+  template_hl7: "template_reader_orm_hl7.yaml"
+
+paths:
+  executable: "/Users/thethian91/Documents/projects/integraciones/lab-integrador-services/"
+  config: "app/configs"
+  #inbox: "app/storages/inbox"
+  inbox: "/Users/thethian91/Documents/projects/integraciones/lab-integrador-services/app/storages/inbox"
+  outbox: "app/storages/outbox"
+  archive: "app/storages/archive"
+  error: "app/storages/error"
+  logs_root: "logs"     # logs/YYYY/MM/DD/app.log
+  raw_hl7: "logs/raw"   # guarda mensajes HL7 crudos
+
+transport:
+  orders: 
+    type: "file"  # file|tcp
+    file: 
+      filename_pattern: "ORD_{timestamp}_{uuid}.hl7"
+    tcp: 
+      host: "127.0.0.1"
+      port: 5001
+      timeout_sec: 5
+
+  results: 
+    type: "file" # file|tcp
+    file: 
+      watch_interval_sec: 1
+      filename_glob: "*.hl7"
+      tcp: 
+        host: "0.0.0.0"
+        port: 5002
+
+retry:
+  attempts: 3
+  backoff_sec: 2
+
+
+mllp:
+  enabled: true
+  accept_multiple: true
+parser:
+  accept_cr_only: true
+  charset_fallback: "latin-1"
+icon3:
+  pid_sample_fallback_order: ["PID-3-1","PID-5-1","OBR-2","OBR-3"]  # si quieres usar luego
+validation:
+  strict_histogram_256: true
+output:
+  none_to_empty: true   # si lo pones en false, mantendrá None como null en JSON
+

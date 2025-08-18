@@ -1,0 +1,104 @@
+version: 1
+hl7:
+  field_sep: "|"
+  comp_sep: "^"
+  rep_sep: "~"
+  esc: "\\"
+  subcomp_sep: "&"
+
+templates:
+  # ========== (A) UN SOLO ORC + MÚLTIPLES OBR ==========
+  ORM_O01_ORC_ONCE:
+    - "MSH|^~\\&|MYAPP|MYSITE|LIS|HOSP|@FECHA_MSH||ORM^O01|@MSG_CTRL_ID|P|2.5"
+    - "PID|@TPDOC|@NUMDOC|1|FIJO|@APELLIDOS^@NOMBRES||@FNAC|@SEXO"
+    - "PV1|1|O|@SERVICIO"
+    # ORC único: toma la orden base del primer item en 'ordenes'
+    - "ORC|NW|@ORDEN_ID_BASE||@PLACER_ID_BASE|SC||@FECHA_ORDEN_BASE"
+    # Recorre OBRs
+    - for_each: "ordenes"
+      lines:
+        - "OBR|1|@THIS.orden_id||@THIS.codigo^@THIS.descripcion||@THIS.fecha_muestra"
+
+  # ========== (B) UN ORC POR CADA OBR ==========
+  ORM_O01_ORC_EACH:
+    - "MSH|^~\\&|MYAPP|MYSITE|LIS|HOSP|@FECHA_MSH||ORM^O01|@MSG_CTRL_ID|P|2.5"
+    - "PID|@TPDOC|@NUMDOC|1|FIJO|@APELLIDOS^@NOMBRES||@FNAC|@SEXO"
+    - "PV1|1|O|@SERVICIO"
+    - for_each: "ordenes"
+      lines:
+        - "ORC|NW|@THIS.orden_id||@THIS.placer_id|SC||@THIS.fecha_orden"
+        - "OBR|1|@THIS.orden_id||@THIS.codigo^@THIS.descripcion||@THIS.fecha_muestra"
+
+mappings:
+  # ---- comunes ----
+  TPDOC: { source: "DATA:paciente.tipo_doc", transforms: [upper] }
+  NUMDOC: { source: "DATA:paciente.num_doc" }
+  APELLIDOS: { source: "DATA:paciente.apellidos", transforms: [upper, trim] }
+  NOMBRES: { source: "DATA:paciente.nombres", transforms: [upper, trim] }
+  FNAC: { source: "DATA:paciente.fecha_nac", transforms: ["datefmt:%Y%m%d"] }
+  SEXO: { source: "DATA:paciente.sexo", transforms: [upper] }
+  SERVICIO: { source: "DATA:atencion.servicio" }
+  FECHA_MSH: { source: "DATA:meta.fecha_mensaje", transforms: ["datefmt:%Y%m%d%H%M%S"] }
+  MSG_CTRL_ID: { source: "DATA:meta.msg_ctrl_id" }
+
+  # ---- SOLO para ORM_O01_ORC_ONCE (toma del primer item de 'ordenes') ----
+  ORDEN_ID_BASE:   { source: "DATA:ordenes[0].orden_id" }
+  PLACER_ID_BASE:  { source: "DATA:ordenes[0].placer_id" }
+  FECHA_ORDEN_BASE: { source: "DATA:ordenes[0].fecha_orden" }
+
+defaults:
+  sexo: "U"
+
+options:
+  missing_placeholder: "error"
+  escape_at: true
+
+extractors:
+  HEADER_PATIENT:
+    - name: meta.fecha_mensaje
+      path: "MSH-7"
+      transforms: ["datefmt_in:%Y%m%d%H%M%S", "datefmt_out:%Y-%m-%d %H:%M:%S"]
+    - name: meta.message_type
+      path: "MSH-9"
+    - name: meta.msg_ctrl_id
+      path: "MSH-10"
+    - name: meta.processing_id
+      path: "MSH-11"
+    # - { name: meta.fecha_mensaje, path: "MSH-7", transforms: ["datefmt_in:%Y%m%d%H%M%S", "datefmt_out:%Y-%m-%d %H:%M:%S"] }
+    # - { name: meta.msg_ctrl_id,   path: "MSH-10" }
+    - { name: paciente.num_doc,   path: "PID-3-1" }
+    - { name: paciente.apellidos, path: "PID-5-1", transforms: [upper, trim] }
+    - { name: paciente.nombres,   path: "PID-5-2", transforms: [upper, trim] }
+    - { name: paciente.fecha_nac, path: "PID-7", transforms: ["datefmt_in:%Y%m%d", "datefmt_out:%Y-%m-%d"] }
+    - { name: paciente.sexo,      path: "PID-8" }
+    - { name: atencion.servicio,  path: "PV1-3-1" }
+    - name: meta.message_type
+      path: "MSH-9"     # p.ej. "ORU^R01"
+
+
+group_extractors:
+  OBR_OBX_GROUPED:
+    base: "OBR"
+    assign: "ordenes[*]"
+    fields:
+      obr.orden_id: "OBR-2"
+      obr.codigo:   "OBR-4-1"
+      obr.descripcion: "OBR-4-2"
+      obr.fecha_muestra: { path: "OBR-7", transforms: ["datefmt_in:%Y%m%d%H%M%S", "datefmt_out:%Y-%m-%d %H:%M:%S"] }
+    children:
+      base: "OBX"
+      assign: "examenes[*]"
+      fields:
+        codigo: "OBX-3-1"
+        descripcion: "OBX-3-2"
+        tipo: "OBX-2"
+        valor: "OBX-5"
+        unidades: "OBX-6-2"
+        rango_ref: "OBX-7"
+        flag: "OBX-8"
+        status: "OBX-11"
+        obs_datetime: 
+          path: "OBX-14"
+          transforms: ["datefmt_in:%Y%m%d%H%M%S", "datefmt_out:%Y-%m-%d %H:%M:%S"]
+
+

@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.log
+.env
+logs/
+app/storages/inbox/
+app/storages/outbox/
+app/storages/archive/
+app/storages/error/
+.DS_Store
+.python-version
+
