@@ -1,13 +1,16 @@
 # app/services/results_service.py
 import asyncio
 import json
-from pydantic import ValidationError
+import shutil
 from pathlib import Path
+
+from pydantic import ValidationError
+
+from app.commons.logger import logger
 from app.helpers.file_transport import FileWatcher
 from app.helpers.tcp_transport import TcpServer
-from app.commons.logger import logger
-import shutil
 from app.validation.validators import validate_hl7_message_or_raise
+
 
 class ResultsService:
     def __init__(self, router, transport_cfg, paths, strict_histogram_256: bool = True):
@@ -29,7 +32,7 @@ class ResultsService:
             data = self.router.extract_results(hl7_text)
             stem = Path(src).stem if src else "tcp_result"
             out_json = Path(self.paths["archive"]) / f"{stem}.json"
-            #out_json.write_text(str(data), encoding="utf-8")
+            # out_json.write_text(str(data), encoding="utf-8")
             out_json.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
             logger.info(f"Resultado procesado y archivado: {out_json}")
 
@@ -47,7 +50,7 @@ class ResultsService:
                 errp.write_text(hl7_text, encoding="utf-8")
                 logger.error(f"Validación falló para {err_name}: {ve}")
                 return  # early exit
-            
+
             # → Este archivo está mal: llévalo a error/ y NO tumbar el servicio
             err_name = Path(src).name if src else "tcp_result.err.hl7"
             errp = Path(self.paths["error"]) / err_name
@@ -62,7 +65,7 @@ class ResultsService:
             logger.exception(f"Error procesando resultado: {ex}. Movido a {errp}")
             return
 
-    '''
+    """
     async def _process_backlog(self, glob_pat: str):
         inbox = Path(self.paths["inbox"])
         files = sorted(inbox.glob(glob_pat))
@@ -76,7 +79,7 @@ class ResultsService:
                 logger.warning(f"No se pudo leer {f}: {e}; reintento breve...")
                 await asyncio.sleep(0.1)
                 text = f.read_text(encoding="utf-8")
-            await self._process_text(text, str(f)) '''
+            await self._process_text(text, str(f)) """
 
     async def _process_backlog(self, glob_pat: str):
         inbox = Path(self.paths["inbox"])
