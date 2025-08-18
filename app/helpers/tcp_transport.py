@@ -1,8 +1,9 @@
 import asyncio
 
-VT = b'\x0b'  # <VT>
-FS = b'\x1c'  # <FS>
-CR = b'\x0d'  # <CR>
+VT = b"\x0b"  # <VT>
+FS = b"\x1c"  # <FS>
+CR = b"\x0d"  # <CR>
+
 
 async def read_mllp_messages(reader: asyncio.StreamReader):
     """
@@ -33,25 +34,30 @@ async def read_mllp_messages(reader: asyncio.StreamReader):
                     # No hay CR después de FS -> espera más
                     break
                 # Extraer mensaje entre VT y FS
-                payload = bytes(buf[start + 1: fs])  # sin VT/FS/CR
+                payload = bytes(buf[start + 1 : fs])  # sin VT/FS/CR
                 # Consumir hasta CR (fs+2)
-                del buf[:fs + 2]
+                del buf[: fs + 2]
                 # Decodificar (UTF-8 por defecto; puedes aplicar fallback si falla)
                 try:
-                    msg = payload.decode('utf-8')
+                    msg = payload.decode("utf-8")
                 except UnicodeDecodeError:
-                    msg = payload.decode('latin-1')
+                    msg = payload.decode("latin-1")
                 yield msg
             except ValueError:
                 # No hay FS aún
                 break
 
+
 class TcpSender:
     def __init__(self, host: str, port: int, timeout: float = 5.0):
-        self.host = host; self.port = port; self.timeout = timeout
+        self.host = host
+        self.port = port
+        self.timeout = timeout
 
     async def send(self, hl7_text: str) -> None:
-        reader, writer = await asyncio.wait_for(asyncio.open_connection(self.host, self.port), timeout=self.timeout)
+        reader, writer = await asyncio.wait_for(
+            asyncio.open_connection(self.host, self.port), timeout=self.timeout
+        )
         writer.write(hl7_text.encode("utf-8"))
         await writer.drain()
         writer.close()
@@ -60,7 +66,9 @@ class TcpSender:
 
 class TcpServer:
     def __init__(self, host: str, port: int, on_message_async):
-        self.host = host; self.port = port; self.on_message_async = on_message_async
+        self.host = host
+        self.port = port
+        self.on_message_async = on_message_async
         self._server = None
 
     async def _handle(self, reader, writer):

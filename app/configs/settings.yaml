@@ -13,10 +13,10 @@ filename:
   template_hl7: "template_reader_orm_hl7.yaml"
 
 paths:
-  executable: "/Users/thethian91/Documents/projects/integraciones/lab-integrador-services/"
+  executable: "/Users/thethian91/Documents/projects/integraciones/lab-integrator-service/"
   config: "app/configs"
   #inbox: "app/storages/inbox"
-  inbox: "/Users/thethian91/Documents/projects/integraciones/lab-integrador-services/app/storages/inbox"
+  inbox: "/Users/thethian91/Documents/projects/integraciones/lab-integrator-service/app/storages/inbox"
   outbox: "app/storages/outbox"
   archive: "app/storages/archive"
   error: "app/storages/error"
