@@ -74,5 +74,47 @@ def results():
         asyncio.run(svc.run_tcp_mode(tcp["host"], tcp["port"]))
 
 
+@app.command()
+def run_results(stop_event: asyncio.Event | None = None):
+    """
+    Ejecuta una 'pasada' en modo FILE o arranca el loop TCP.
+    - En FILE: procesa y retorna.
+    - En TCP: se queda corriendo hasta que stop_event esté seteado
+      (o hasta que run_tcp_mode termine).
+    """
+    cfg = load_cfg()
+    logger = setup_logging(cfg["paths"]["logs_root"], os.getenv("LOG_LEVEL", "INFO"))
+    logger.log("INFO", "Iniciando lectura de resultados pendientes por procesar")
+
+    engine = HL7Engine(
+        f"{cfg['paths']['executable']}{cfg['paths']['config']}/{cfg['filename']['template_hl7']}"
+    )
+    router = FlowRouter(engine, cfg)
+    svc = ResultsService(
+        router, cfg["transport"], cfg["paths"], cfg["validation"]["strict_histogram_256"]
+    )
+
+    async def _amain():
+        if cfg["transport"]["results"]["type"] == "file":
+            glob_pat = cfg["transport"]["results"]["file"]["filename_glob"]
+            # Ideal: que run_file_mode acepte stop_event opcional (no bloqueante)
+            try:
+                await svc.run_file_mode(glob_pat, stop_event=stop_event)
+            except TypeError:
+                # Compat: si tu método no recibe stop_event
+                # llama la versión vieja
+                await svc.run_file_mode(glob_pat)
+        else:
+            tcp = cfg["transport"]["results"]["tcp"]
+            # Ideal: que run_tcp_mode acepte stop_event opcional y revise periódicamente
+            try:
+                await svc.run_tcp_mode(tcp["host"], tcp["port"], stop_event=stop_event)
+            except TypeError:
+                # Compat: si no soporta stop_event, al menos ejecuta la versión actual
+                await svc.run_tcp_mode(tcp["host"], tcp["port"])
+
+    asyncio.run(_amain())
+
+
 if __name__ == "__main__":
     app()
