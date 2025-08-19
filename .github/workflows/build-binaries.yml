@@ -1,0 +1,92 @@
+name: Build PyInstaller Binaries
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            py: '3.12'
+            exe_name: 'lab-integrator'
+            artifact_name: 'lab-integrator-linux'
+          - os: windows-latest
+            py: '3.12'
+            exe_name: 'lab-integrator.exe'
+            artifact_name: 'lab-integrator-windows'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.py }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.py }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      # --- Verificar que existan configs ---
+      - name: List config files (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          echo "Listing config files to include (Linux):"
+          ls -la app/configs || true
+
+      - name: List config files (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          echo "Listing config files to include (Windows):"
+          if (Test-Path "app/configs") { Get-ChildItem -Force app/configs } else { Write-Host "No app/configs" }
+
+      # --- Build con comandos separados por SO (IMPORTANTE) ---
+      - name: Build with PyInstaller (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          pyinstaller --onefile --name lab-integrator \
+            --add-data "app/configs/*.yaml:app/configs" \
+            run.py
+        env:
+          ENV: dev
+          LOG_LEVEL: INFO
+
+      - name: Build with PyInstaller (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          pyinstaller --onefile --name lab-integrator ^
+            --add-data "app\configs\*.yaml;app\configs" ^
+            run.py
+        env:
+          ENV: dev
+          LOG_LEVEL: INFO
+
+      # --- Mostrar dist ---
+      - name: Show dist (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          ls -la dist
+
+      - name: Show dist (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          Get-ChildItem -Force dist
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: dist/${{ matrix.exe_name }}
+          if-no-files-found: error

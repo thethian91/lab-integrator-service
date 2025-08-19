@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=69", "wheel", "build"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lab-integrator-service-icon3"
+version = "0.1.0"
+description = "Integration service between Sofia REST API and lab analyzers icon3"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Cristian Giraldo", email = "tu.email@example.com" }]
+dependencies = [
+  "pyyaml>=6.0",
+  "requests>=2.31",
+  "aiofiles>=23.2.1",
+  "python-dotenv>=1.0",
+  "typer[all]>=0.12",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "flake8>=7", "black>=24", "isort>=5.12", "pre-commit>=3.6"]
+
+# >>>>>> AQUÍ VIENE LA DISCOVERY <<<<<<
+[tool.setuptools.packages.find]
+# Solo toma app y subpaquetes
+include = ["app*"]
+# Excluye directorios que NO son paquetes
+exclude = ["tests*", "logs*", "dist*", "build*"]
+
+# Si tienes archivos no-Python que quieras incluir (ej. plantillas/configs)
+[tool.setuptools.package-data]
+app = ["configs/*.yaml", "templates/*.txt"]
+
+[tool.setuptools]
+include-package-data = true
