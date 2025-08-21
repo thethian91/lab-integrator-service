@@ -15,11 +15,11 @@ filename:
 paths:
   executable: "/Users/thethian91/Documents/projects/integraciones/lab-integrator-service/"
   config: "app/configs"
-  #inbox: "app/storages/inbox"
-  inbox: "/Users/thethian91/Documents/projects/integraciones/lab-integrator-service/app/storages/inbox"
+  inbox: "app/storages/inbox"
   outbox: "app/storages/outbox"
   archive: "app/storages/archive"
   error: "app/storages/error"
+  
   logs_root: "logs"     # logs/YYYY/MM/DD/app.log
   raw_hl7: "logs/raw"   # guarda mensajes HL7 crudos
 
@@ -34,13 +34,20 @@ transport:
       timeout_sec: 5
 
   results: 
-    type: "file" # file|tcp
+    type: "tcp" # file|tcp
     file: 
       watch_interval_sec: 1
       filename_glob: "*.hl7"
-      tcp: 
+    tcp: 
         host: "0.0.0.0"
         port: 5002
+
+    # section for finecare
+    finecare:
+      bind_ip: "0.0.0.0"
+      port: 8001
+      # "auto" intentará detectar si es HL7 o ASTM por el contenido
+      message_format: "auto"   # opciones: auto | HL7 | ASTM
 
 retry:
   attempts: 3

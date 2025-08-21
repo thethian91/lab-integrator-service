@@ -25,7 +25,6 @@ ESCAPED_AT = re.compile(r"@@")
 
 class HL7Engine:
     def __init__(self, config_path: str):
-        print(config_path)
         with open(config_path, "r", encoding="utf-8") as f:
             self.cfg = yaml.safe_load(f)
         self.sep = {
