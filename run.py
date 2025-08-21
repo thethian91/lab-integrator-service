@@ -1,5 +1,9 @@
 import asyncio
 import os
+import socket
+from asyncio import Event
+from datetime import datetime
+from typing import Optional
 
 import typer
 import yaml
@@ -10,7 +14,33 @@ from app.helpers.router import FlowRouter
 from app.services.orders_service import OrdersService
 from app.services.results_service import ResultsService
 
-app = typer.Typer(add_completion=False)
+app = typer.Typer(add_completion=False, help="Lab Integrator Service")
+
+
+def _ensure_dir(p: str):
+    os.makedirs(p, exist_ok=True)
+
+
+def _guess_payload_format(payload: bytes) -> str:
+    # Heurística rápida: HL7 suele iniciar con 'MSH'
+    if payload.strip().startswith(b"MSH"):
+        return "HL7"
+    return "ASTM"
+
+
+def _write_incoming(paths_cfg: dict, payload: bytes, fmt_hint: str | None = None) -> str:
+    inbox = os.path.join(paths_cfg["inbox_root"], "finecare")
+    _ensure_dir(inbox)
+    ts = datetime.utcnow().strftime("%Y%m%d-%H%M%S-%f")
+    fmt = fmt_hint or _guess_payload_format(payload)
+    ext = "hl7" if fmt == "HL7" else "astm"
+    fpath = os.path.join(inbox, f"{ts}.{ext}")
+    with open(fpath, "wb") as f:
+        f.write(payload)
+    return fpath
+
+
+# =============================
 
 
 def load_cfg():
@@ -65,7 +95,6 @@ def results():
     svc = ResultsService(
         router, cfg["transport"], cfg["paths"], cfg["validation"]["strict_histogram_256"]
     )
-
     if cfg["transport"]["results"]["type"] == "file":
         glob_pat = cfg["transport"]["results"]["file"]["filename_glob"]
         asyncio.run(svc.run_file_mode(glob_pat))
@@ -75,13 +104,15 @@ def results():
 
 
 @app.command()
-def run_results(stop_event: asyncio.Event | None = None):
+# def run_results(stop_event: asyncio.Event | None = None):
+def run_results(is_stop_event: bool = False):
     """
     Ejecuta una 'pasada' en modo FILE o arranca el loop TCP.
     - En FILE: procesa y retorna.
     - En TCP: se queda corriendo hasta que stop_event esté seteado
       (o hasta que run_tcp_mode termine).
     """
+    stop_event: Optional[Event] = None
     cfg = load_cfg()
     logger = setup_logging(cfg["paths"]["logs_root"], os.getenv("LOG_LEVEL", "INFO"))
     logger.log("INFO", "Iniciando lectura de resultados pendientes por procesar")
@@ -114,6 +145,51 @@ def run_results(stop_event: asyncio.Event | None = None):
                 await svc.run_tcp_mode(tcp["host"], tcp["port"])
 
     asyncio.run(_amain())
+
+
+@app.command()
+def finecare(
+    host: str = typer.Option("0.0.0.0", help="IP local para escuchar"),
+    port: int = typer.Option(8001, help="Puerto UDP (Finecare por defecto 8001)"),
+    bufsize: int = typer.Option(65535, help="Tamaño buffer UDP"),
+):
+    """
+    Receiver de resultados Finecare por UDP.
+    - Guarda cada frame en /inbox_root/finecare/*.hl7|*.astm
+    - Reusa el pipeline ResultsService para procesarlos
+    """
+    cfg = load_cfg()
+
+    # host = cfg["transport"]["results"]["finecare"]["bind_ip"]
+    # port = cfg["transport"]["results"]["finecare"]["port"]
+
+    logger = setup_logging(cfg["paths"]["logs_root"], os.getenv("LOG_LEVEL", "INFO"))
+    logger.log("INFO", f"Finecare UDP receiver escuchando en {host}:{port}")
+
+    # Prepara motor/flujo (usa lo que ya tienes)
+    engine = HL7Engine(
+        f"{cfg['paths']['executable']}{cfg['paths']['config']}/{cfg['filename']['template_hl7']}"
+    )
+    router = FlowRouter(engine, cfg)
+    svc = ResultsService(
+        router, cfg["transport"], cfg["paths"], cfg["validation"]["strict_histogram_256"]
+    )
+
+    # Socket UDP
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((host, port))
+
+    while True:
+        data, addr = sock.recvfrom(bufsize)
+        logger.log("INFO", f"Datagrama recibido de {addr[0]}:{addr[1]} ({len(data)} bytes)")
+        fpath = _write_incoming(cfg["paths"], data, None)
+
+        try:
+            # Delega a tu servicio actual de resultados
+            svc.process_file(fpath)
+            logger.log("INFO", f"Procesado OK: {fpath}")
+        except Exception as e:
+            logger.log("ERROR", f"Error procesando {fpath}: {e}")
 
 
 if __name__ == "__main__":
