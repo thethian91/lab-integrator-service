@@ -3,6 +3,7 @@ import os
 import socket
 from asyncio import Event
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
 
 import typer
@@ -44,7 +45,7 @@ def _write_incoming(paths_cfg: dict, payload: bytes, fmt_hint: str | None = None
 
 
 def load_cfg():
-    with open("app/configs/settings.yaml", "r", encoding="utf-8") as f:
+    with open(f"{Path('app/configs/settings.yaml')}", "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
@@ -88,9 +89,15 @@ def results():
     cfg = load_cfg()
     logger = setup_logging(cfg["paths"]["logs_root"], os.getenv("LOG_LEVEL", "INFO"))
     logger.log("INFO", "Iniciando lectura de resultados pendientes por procesar")
-    engine = HL7Engine(
-        f"{cfg['paths']['executable']}{cfg['paths']['config']}/{cfg['filename']['template_hl7']}"
-    )
+    path_base = Path(cfg["paths"]["executable"])
+    path_config = Path(cfg["paths"]["config"])
+    path_template = Path(cfg["filename"]["template_hl7"])
+
+    full_path = Path(f"{path_base}/{path_config}/{path_template}")
+
+    print(path_base, path_config, path_template)
+
+    engine = HL7Engine(f"{full_path}")
     router = FlowRouter(engine, cfg)
     svc = ResultsService(
         router, cfg["transport"], cfg["paths"], cfg["validation"]["strict_histogram_256"]
@@ -168,7 +175,7 @@ def finecare(
 
     # Prepara motor/flujo (usa lo que ya tienes)
     engine = HL7Engine(
-        f"{cfg['paths']['executable']}{cfg['paths']['config']}/{cfg['filename']['template_hl7']}"
+        f"[{cfg['paths']['executable']}{cfg['paths']['config']}/{cfg['filename']['template_hl7']}]"
     )
     router = FlowRouter(engine, cfg)
     svc = ResultsService(
