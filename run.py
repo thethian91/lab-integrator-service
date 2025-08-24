@@ -92,11 +92,7 @@ def results():
     path_base = Path(cfg["paths"]["executable"])
     path_config = Path(cfg["paths"]["config"])
     path_template = Path(cfg["filename"]["template_hl7"])
-
     full_path = Path(f"{path_base}/{path_config}/{path_template}")
-
-    print(path_base, path_config, path_template)
-
     engine = HL7Engine(f"{full_path}")
     router = FlowRouter(engine, cfg)
     svc = ResultsService(

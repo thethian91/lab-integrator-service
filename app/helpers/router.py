@@ -1,6 +1,7 @@
 import re
 from datetime import datetime
 from pathlib import Path
+from typing import Dict
 
 from app.commons.hl7_engine import HL7Engine
 
@@ -20,6 +21,10 @@ class FlowRouter:
         self.engine = engine
         self.cfg = cfg
         self.paths = cfg["paths"]
+
+    def transform_hl7_result(self, hl7_text: str) -> Dict:
+        """Retorna el payload listo para la API de SOFIA."""
+        return self.engine.parse_and_map(hl7_text)
 
     def _parse_icon3_nte(self, hl7_text: str) -> dict:
         """
