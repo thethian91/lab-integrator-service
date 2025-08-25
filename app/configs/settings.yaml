@@ -3,6 +3,10 @@ app:
   mode: "prod" # dev|prod
   timezone: "America/Bogota"
 
+parsers:
+  autodetect: true # intentar detectar entre ICON3 y FINECARE
+  override: "" # "ICON3" o "FINECARE" para forzar (vacío = auto)
+
 engine: 
   template: "ORM_O01_ORC_EACH"
   extractor_profile: "OBR_OBX_GROUPED"

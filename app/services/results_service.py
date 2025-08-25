@@ -65,8 +65,8 @@ class ResultsService:
             # 2) valida (MSH-9 requerido y histogramas de 256 bytes)
             validate_hl7_message_or_raise(hl7_text)
             # 3) extrae y escribe JSON
-            data = self.router.extract_results(hl7_text)
-            # stem = Path(src).stem if src else "tcp_result"
+            # data = self.router.extract_results(hl7_text)
+            data = self.router.transform_hl7_result(hl7_text)
             filename = generate_inbox_filename(src, origin="file" if src else "tcp")
             out_json = Path(self.paths["archive"]) / f"{filename}"
             out_json.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
