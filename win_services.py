@@ -1,7 +1,7 @@
 # noqa
 
 # win_service.py
-# Servicio de Windows para "icon3-integration" que reutiliza tu comando results() de run.py.
+# Servicio de Windows para "lab-integrator-services" que reutiliza tu comando results() de run.py.
 # - TCP: llama results() una vez (bloquea dentro).
 # - FILE: ejecuta results() en bucle cada INTERVAL segundos.
 
@@ -71,13 +71,13 @@ def _load_mode_and_interval(default_interval=10):
     except Exception as e:
         # Si falla cargar config, cae en TCP por seguridad
         # (no hace loop) y usa default_interval
-        servicemanager.LogErrorMsg(f"[icon3-integration] No se pudo leer config: {e}")
+        servicemanager.LogErrorMsg(f"[lab-integrator-services] No se pudo leer config: {e}")
         return "tcp", default_interval
 
 
-class Icon3IntegrationService(win32serviceutil.ServiceFramework):
-    _svc_name_ = "Icon3Integration"
-    _svc_display_name_ = "Icon3 Integration Service"
+class LabIntegrationService(win32serviceutil.ServiceFramework):
+    _svc_name_ = "lab-integrator-services"
+    _svc_display_name_ = "Lab Integratin Services"
     _svc_description_ = "Procesa resultados HL7 (FILE en bucle; TCP continuo)."
 
     def __init__(self, args):
@@ -90,7 +90,7 @@ class Icon3IntegrationService(win32serviceutil.ServiceFramework):
         self.mode, self.file_interval = _load_mode_and_interval(default_interval=10)
 
     def SvcDoRun(self):
-        servicemanager.LogInfoMsg(f"[icon3-integration] Service starting (mode={self.mode})")
+        servicemanager.LogInfoMsg(f"[lab-integrator-services] Service starting (mode={self.mode})")
 
         def worker():
             try:
@@ -100,10 +100,10 @@ class Icon3IntegrationService(win32serviceutil.ServiceFramework):
                     # TCP (o fallback): corre una sola vez; bloquea hasta terminar.
                     run_results()
             except Exception as e:
-                servicemanager.LogErrorMsg(f"[icon3-integration] Error en worker: {e}")
+                servicemanager.LogErrorMsg(f"[lab-integrator-services] Error en worker: {e}")
 
         self.worker_thread = threading.Thread(
-            target=worker, name="icon3-service-worker", daemon=True
+            target=worker, name="lab-integrator-service-worker", daemon=True
         )
         self.worker_thread.start()
 
@@ -118,10 +118,10 @@ class Icon3IntegrationService(win32serviceutil.ServiceFramework):
         while self.worker_thread.is_alive() and time.time() < join_deadline:
             time.sleep(0.5)
 
-        servicemanager.LogInfoMsg("[icon3-integration] Service stopped")
+        servicemanager.LogInfoMsg("[lab-integrator-services] Service stopped")
 
     def SvcStop(self):
-        servicemanager.LogInfoMsg("[icon3-integration] Service stopping...")
+        servicemanager.LogInfoMsg("[lab-integrator-services] Service stopping...")
         win32event.SetEvent(self.hWaitStop)
 
     # ---------- helpers ----------
@@ -131,12 +131,14 @@ class Icon3IntegrationService(win32serviceutil.ServiceFramework):
         espera file_interval segundos entre cada una.
         Al recibir STOP, el bucle sale entre iteraciones.
         """
-        servicemanager.LogInfoMsg(f"[icon3-integration] FILE loop cada {self.file_interval}s")
+        servicemanager.LogInfoMsg(f"[lab-integrator-services] FILE loop cada {self.file_interval}s")
         while self.running:
             try:
                 run_results()  # tu results() en modo FILE hace una pasada y regresa
             except Exception as e:
-                servicemanager.LogErrorMsg(f"[icon3-integration] Error en results() [FILE]: {e}")
+                servicemanager.LogErrorMsg(
+                    f"[lab-integrator-services] Error en results() [FILE]: {e}"
+                )
             # Espera dividida en pasos cortos para reaccionar más rápido al STOP
             steps = max(1, int(self.file_interval * 2))  # pasos de 0.5s
             for _ in range(steps):
@@ -152,4 +154,4 @@ if __name__ == "__main__":
     #   python win_service.py stop
     #   python win_service.py remove
     #   python win_service.py debug
-    win32serviceutil.HandleCommandLine(Icon3IntegrationService)
+    win32serviceutil.HandleCommandLine(LabIntegrationService)

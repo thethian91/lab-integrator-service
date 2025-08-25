@@ -45,6 +45,20 @@ def _write_incoming(paths_cfg: dict, payload: bytes, fmt_hint: str | None = None
 # =============================
 
 
+def resolve_path_from_cfg(cfg: dict, filename_key: str) -> str:
+    """Resuelve la ruta absoluta a un archivo YAML basándose en cfg['paths'] y cfg['filename']"""
+    if hasattr(sys, "_MEIPASS"):
+        # Si está empaquetado como .exe (PyInstaller)
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.abspath(".")
+
+    path_base = Path(base_path)
+    config_dir = Path(cfg["paths"]["config"])
+    filename = Path(cfg["filename"][filename_key])
+    return str(path_base / config_dir / filename)
+
+
 def resource_path(relative_path: str) -> str:
     """Devuelve la ruta absoluta a un recurso, ya sea ejecutando como .exe o en desarrollo"""
     if hasattr(sys, "_MEIPASS"):
@@ -134,9 +148,13 @@ def run_results(is_stop_event: bool = False):
     logger = setup_logging(cfg["paths"]["logs_root"], os.getenv("LOG_LEVEL", "INFO"))
     logger.log("INFO", "Iniciando lectura de resultados pendientes por procesar")
 
+    template_path = resolve_path_from_cfg(cfg, "template_hl7")
+    engine = HL7Engine(template_path)
+
+    """
     engine = HL7Engine(
         f"{cfg['paths']['executable']}{cfg['paths']['config']}/{cfg['filename']['template_hl7']}"
-    )
+    )"""
     router = FlowRouter(engine, cfg)
     svc = ResultsService(
         router, cfg["transport"], cfg["paths"], cfg["validation"]["strict_histogram_256"]
