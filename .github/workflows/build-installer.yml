@@ -1,7 +1,7 @@
 name: Build Windows Installer
 
 on:
-  workflow_dispatch:  # se ejecuta manualmente
+  workflow_dispatch:
 
 jobs:
   build-installer:
@@ -21,25 +21,39 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
-      - name: Build executable with PyInstaller
+      - name: Build lab-integrator.exe
         run: |
-          pyinstaller --onefile --name lab-integrator --distpath dist run.py
+          pyinstaller --onefile --name lab-integrator --distpath dist `
+            --add-data "app/configs/*.yaml;app/configs" `
+            run.py
 
-      - name: Download and install Inno Setup
+      - name: Build lab-integrator-service.exe
+        run: |
+          pyinstaller --onefile --name lab-integrator-service --distpath dist `
+            --add-data "app/configs/*.yaml;app/configs" `
+            win_services.py
+
+      - name: Verificar que el .exe fue generado
+        shell: pwsh
+        run: |
+          if (Test-Path "dist/lab-integrator.exe") {
+            Write-Host "✅ Ejecutable lab-integrator.exe encontrado."
+          } else {
+            Write-Host "❌ El ejecutable lab-integrator.exe NO fue encontrado."
+            exit 1
+          }
+
+      - name: Descargar e instalar Inno Setup
         run: |
           Invoke-WebRequest https://jrsoftware.org/download.php/is.exe -OutFile is.exe
           Start-Process .\is.exe /VERYSILENT -Wait
 
-      - name: Compile installer using Inno Setup
+      - name: Compilar instalador con Inno Setup
         run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\windows\setup.iss
 
-      - name: Upload installer artifact
+      - name: Subir artefacto del instalador
         uses: actions/upload-artifact@v4
         with:
           name: Windows-Installer
           path: out/installer/*.exe
-
-      - name: Show contents of out/installer
-        run: |
-          dir out\installer

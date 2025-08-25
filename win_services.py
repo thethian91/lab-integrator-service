@@ -5,6 +5,7 @@
 # - TCP: llama results() una vez (bloquea dentro).
 # - FILE: ejecuta results() en bucle cada INTERVAL segundos.
 
+import os
 import socket
 import sys  # noqa: F401,E501
 import threading
@@ -17,8 +18,21 @@ import win32serviceutil  # noqa: F401,E501
 import yaml
 
 
+def resource_path(relative_path: str) -> str:
+    """Devuelve la ruta absoluta a un recurso, ya sea ejecutando como .exe o en desarrollo"""
+    if hasattr(sys, "_MEIPASS"):
+        # Si es un ejecutable generado por PyInstaller
+        base_path = sys._MEIPASS
+    else:
+        # Si es ejecución normal (dev)
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
+
 def load_cfg():
-    with open("app/configs/settings.yaml", "r", encoding="utf-8") as f:
+    config_path = resource_path("app/configs/settings.yaml")
+    with open(config_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
