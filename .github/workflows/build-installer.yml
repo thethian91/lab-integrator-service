@@ -29,9 +29,14 @@ jobs:
 
       - name: Build lab-integrator-service.exe
         run: |
-          pyinstaller --onefile --name lab-integrator-service --distpath dist `
-            --add-data "app/configs/*.yaml;app/configs" `
-            win_services.py
+            pyinstaller --onefile --name lab-integrator-service --distpath dist win_services.py `
+            --hidden-import=pywintypes `
+            --hidden-import=win32timezone `
+            --hidden-import=win32api `
+            --hidden-import=win32serviceutil `
+            --hidden-import=win32service `
+            --hidden-import=win32event `
+            --hidden-import=servicemanager
 
       - name: Verificar que el .exe fue generado
         shell: pwsh
