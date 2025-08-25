@@ -39,3 +39,7 @@ jobs:
         with:
           name: Windows-Installer
           path: out/installer/*.exe
+
+      - name: Show contents of out/installer
+        run: |
+          dir out\installer
