@@ -2,8 +2,8 @@
 #define AppName "Lab Integrator Service"        ; <— CAMBIA si tu app se llama distinto
 #define CompanyName "TU_EMPRESA"                ; <— CAMBIA (p.ej. "Axolys")
 #define AppVersion "1.0.0"                      ; <— provisional; luego lo inyectamos desde CI
-#define ExeName "lab-integrator.exe"            ; <— CAMBIA si tu binario se llama distinto
-#define SourceBin "dist\\lab-integrator.exe"    ; <— CAMBIA si tu CI deja el .exe en otra ruta
+#define ExeName "run.exe"           ; <— CAMBIA si tu binario se llama distinto
+#define SourceBin "dist\\run.exe"    ; <— CAMBIA si tu CI deja el .exe en otra ruta
 
 [Setup]
 AppId={{6B1B7D1A-BA73-4D89-9D22-9C1B47E7E6F3}} ; ID estable para upgrades/uninstall
