@@ -23,7 +23,7 @@ jobs:
 
       - name: Build executable with PyInstaller
         run: |
-          pyinstaller --onefile --distpath dist run.py
+          pyinstaller --onefile --name lab-integrator --distpath dist run.py
 
       - name: Download and install Inno Setup
         run: |
