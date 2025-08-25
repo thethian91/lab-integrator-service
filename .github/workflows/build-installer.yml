@@ -26,13 +26,14 @@ jobs:
           pyinstaller --onefile --name lab-integrator --distpath dist run.py
 
       - name: Verificar que el .exe fue generado
+        shell: pwsh
         run: |
-          if not exist dist\lab-integrator.exe (
-            echo "❌ El ejecutable lab-integrator.exe no fue generado."
+            if (Test-Path "dist/lab-integrator.exe") {
+            Write-Host "✅ Ejecutable lab-integrator.exe encontrado."
+            } else {
+            Write-Host "❌ El ejecutable lab-integrator.exe NO fue encontrado."
             exit 1
-          ) else (
-            echo "✅ Ejecutable lab-integrator.exe encontrado."
-          )
+            }
 
       - name: Descargar e instalar Inno Setup
         run: |
