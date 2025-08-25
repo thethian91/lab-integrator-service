@@ -21,7 +21,7 @@ SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=admin
 DisableProgramGroupPage=yes
-SetupIconFile=installer\windows\lab_integrator_icon.ico
+SetupIconFile=..\..\installer\windows\lab_integrator_icon.ico
 
 [Languages]
 Name: "spanish"; MessagesFile: "compiler:Languages\\Spanish.isl"
