@@ -1,7 +1,7 @@
 name: Build Windows Installer
 
 on:
-  workflow_dispatch:  # se ejecuta manualmente
+  workflow_dispatch:
 
 jobs:
   build-installer:
@@ -21,19 +21,27 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
-      - name: Build executable with PyInstaller
+      - name: Build lab-integrator.exe
         run: |
-          pyinstaller --onefile --name lab-integrator --distpath dist run.py
+          pyinstaller --onefile --name lab-integrator --distpath dist `
+            --add-data "app/configs/*.yaml;app/configs" `
+            run.py
+
+      - name: Build lab-integrator-service.exe
+        run: |
+          pyinstaller --onefile --name lab-integrator-service --distpath dist `
+            --add-data "app/configs/*.yaml;app/configs" `
+            win_services.py
 
       - name: Verificar que el .exe fue generado
         shell: pwsh
         run: |
-            if (Test-Path "dist/lab-integrator.exe") {
+          if (Test-Path "dist/lab-integrator.exe") {
             Write-Host "✅ Ejecutable lab-integrator.exe encontrado."
-            } else {
+          } else {
             Write-Host "❌ El ejecutable lab-integrator.exe NO fue encontrado."
             exit 1
-            }
+          }
 
       - name: Descargar e instalar Inno Setup
         run: |

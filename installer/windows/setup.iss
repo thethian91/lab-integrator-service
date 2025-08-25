@@ -35,6 +35,7 @@ Source: "app\\configs\\*"; DestDir: "{app}\\configs"; Flags: recursesubdirs crea
 Source: "docs\\*"; DestDir: "{app}\\docs"; Flags: recursesubdirs createallsubdirs ignoreversion skipifsourcedoesntexist
 Source: "README*"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "LICENSE*"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "..\\..\\dist\\lab-integrator-service.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#ExeName}"
@@ -43,8 +44,11 @@ Name: "{commondesktop}\{#AppName}"; Filename: "{app}\{#ExeName}"; Tasks: desktop
 
 ; Si tu app soporta instalarse como servicio con un parámetro (p.ej. "install"),
 ; puedes descomentar esta sección para ofrecerlo al final del setup:
-; [Run]
+
+[Run]
 ; Filename: "{app}\{#ExeName}"; Parameters: "install"; Description: "Instalar como servicio de Windows"; Flags: postinstall nowait runhidden skipifsilent
+Filename: "{app}\lab-integrator-service.exe"; Parameters: "install"; \
+  Description: "Instalar servicio de Windows"; Flags: postinstall nowait runhidden skipifsilent
 
 ; [UninstallRun]
 ; Filename: "{app}\{#ExeName}"; Parameters: "uninstall"; RunOnceId: "UninstallService"; Flags: runhidden

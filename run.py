@@ -1,6 +1,7 @@
 import asyncio
 import os
 import socket
+import sys
 from asyncio import Event
 from datetime import datetime
 from pathlib import Path
@@ -44,8 +45,21 @@ def _write_incoming(paths_cfg: dict, payload: bytes, fmt_hint: str | None = None
 # =============================
 
 
-def load_cfg():
-    with open(f"{Path('app/configs/settings.yaml')}", "r", encoding="utf-8") as f:
+def resource_path(relative_path: str) -> str:
+    """Devuelve la ruta absoluta a un recurso, ya sea ejecutando como .exe o en desarrollo"""
+    if hasattr(sys, "_MEIPASS"):
+        # Si es un ejecutable generado por PyInstaller
+        base_path = sys._MEIPASS
+    else:
+        # Si es ejecución normal (dev)
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
+
+def load_cfg(path: str = "app/configs/settings.yaml"):
+    config_path = resource_path(path)
+    with open(config_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
